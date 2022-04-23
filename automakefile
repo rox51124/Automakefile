@@ -1,0 +1,66 @@
+#!/bin/bash
+
+if [ "$1" == "" ];
+then
+    exit 84
+fi
+if [ ! -e $1 ];
+then
+    exit 84
+fi
+if [ -d $1 ];
+then
+    exit 84
+fi
+
+lb="-L./"
+inc="-I ./"
+path="$(awk -F ';' '$1 == "PROJECT_DIR" {print $2}' $1)"
+file="prog"
+
+function header()
+{
+    echo "##" > Makefile
+    echo "## EPITECH PROJECT, 2021" >> Makefile
+    echo "## $(basename $(pwd))" >> Makefile
+    echo "## File description:" >> Makefile
+    echo "## Makefile" >> Makefile
+    echo -e "##\n" >> Makefile
+}
+
+header
+echo -e "\nSOURCES = $(awk -F ';' '$1 == "SOURCES_DIR" {print $2}' $1)\n" >> Makefile
+echo -e 'SRC =' | tr "\n" " " >> Makefile
+while read line
+do
+    str=${line%%;*}
+    if [[ $str =~ ".c" ]]
+    then
+        echo "\$(SOURCES)/$str \\" >> Makefile
+	fi
+done < $1
+echo -e '\nOBJ = $(SRC:.c=.o)\n' >> Makefile
+echo -e "NAME  = $(awk -F ';' '$1 == "EXEC" {print $2}' $1)\n" >> Makefile
+echo -e "CC  = $(awk -F ';' '$1 == "CC" {print $2}' $1)\n" >> Makefile
+echo -e "LIB = $lb$(awk -F ';' '$1 == "LIBS_DIR" {print $2}' $1)\n" >> Makefile
+echo -e "HEADER = $inc$(awk -F ';' '$1 == "HEADERS_DIR" {print $2}' $1)\n" >> Makefile
+echo -e "CFLAGS += $(awk -F ';' '$1 == "CFLAGS" {print $2}' $1)\n" >> Makefile
+echo -e "LDFLAGS += $(awk -F ';' '$1 == "LDFLAGS" {print $2}' $1)\n" >> Makefile
+echo -e "BCK_DIR = $(awk -F ';' '$1 == "BCK_DIR" {print $2}' $1)\n" >> Makefile
+echo -e "ZIP = $(awk -F ';' '$1 == "ZIP" {print $2}' $1)\n" >> Makefile
+echo -e "ZIPFLAGS = $(awk -F ';' '$1 == "ZIPFLAGS" {print $2}' $1)\n" >> Makefile
+echo -e "UNZIP = $(awk -F ';' '$1 == "UNZIP" {print $2}' $1)\n" >> Makefile
+echo -e "UNZIPFLAGS = $(awk -F ';' '$1 == "UNZIPFLAGS" {print $2}' $1)\n" >> Makefile
+echo -e 'all: $(NAME)\n' >> Makefile
+echo -e '$(NAME): $(OBJ)\n\t$(CC) -o $(NAME) $(OBJ) $(LIB) $(HEADER) $(CFLAGS) $(LDFLAGS)\n' >> Makefile
+echo -e 'archive:\n\t$(ZIP) $(ZIPFLAGS) $(BCK_DIR)/'$file'.$(ZIP) $(SRC)' >> Makefile
+echo -e '\t@echo "$(BCK_DIR)'$file'.$(ZIP) file generated."\n' >> Makefile
+echo -e 'revert:\n\t$(UNZIP) $(UNZIPFLAGS) $(BCK_DIR)/'$file'.$(ZIP) $(SRC)\n' >> Makefile
+echo -e 'num:\n\t\n' >> Makefile
+echo -e 'delete:\n\t$(RM) $(BCK_DIR)/'$file'.$(ZIP)\n' >> Makefile
+echo -e 'clean:\n\t$(RM) $(OBJ)\n\t$(RM) *.gcno\n' >> Makefile
+echo -e 'fclean: clean\n\t$(RM) $(NAME)\n' >> Makefile
+echo -e "re: fclean all\n">> Makefile
+echo -e '.PHONY: all archive revert num delete clean fclean re' | tr "\n" " " >> Makefile
+
+mv Makefile $path
